@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  # 1. Database Service
+  # 1. Database
   postgres-db:
     image: postgres:16-alpine
     container_name: express-ts-postgres
@@ -15,11 +15,11 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
-  # 2. Express API Application Service
+  # 2. Express API Backend
   api-server:
     build:
-      context: .
-      target: builder # Targets the build stage for local hot-reloading development
+      context: ./server
+      target: builder
     container_name: express-ts-api
     restart: always
     ports:
@@ -30,10 +30,25 @@ services:
       - DATABASE_URL=postgresql://postgres:postgres@postgres-db:5432/mydb?schema=public
     command: npm run dev
     volumes:
-      - .:/app
-      - /app/node_modules # Prevents local node_modules from overwriting container node_modules
+      - ./server:/app
+      - /app/node_modules
     depends_on:
       - postgres-db
+
+  # 3. React Frontend Client
+  client-app:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: react-vite-client
+    restart: always
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./client:/app
+      - /app/node_modules
+    depends_on:
+      - api-server
 
 volumes:
   postgres_data:
